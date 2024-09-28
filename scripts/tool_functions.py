@@ -200,3 +200,11 @@ def find_house_and_building(text):
         return house_number
     else:
         return None
+
+
+def clean_adress(dataset):
+    dataset['address'] = dataset['address'].apply(lambda x: x.replace('\n', ''))
+    dataset['address_index'] = dataset['address'].apply(get_index)
+    dataset['city'] = dataset['address'].apply(find_city)
+    dataset['street'] = dataset['address'].apply(find_streets)
+    dataset['house_and_building'] = dataset['address'].apply(find_house_and_building)

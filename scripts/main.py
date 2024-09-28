@@ -1,5 +1,9 @@
 
-from tool_functions.py import edit_year, edit_name, delete_nums, process_email_custom
+from tool_functions.py import (edit_year, edit_name, delete_nums, process_email_custom, 
+                               find_streets, find_city,
+                               extract_regcode, phone_preprocessing, 
+                               get_index, find_house_and_building, clean_adress)
+
 import clickhouse_connect
 import numpy as np
 import pandas as pd
@@ -28,6 +32,9 @@ df1.year = df1.year.map(lambda x: edit_year(x))
 #   preprocess emails
 df1['login'], df1['domain'] = zip(*df1['email'].apply(process_email_custom))
 df1.drop('email', axis=1, inplace=True)
+
+df1['name'] = df1.full_name.apply(lambda x: edit_name(x))
+df1.drop('full_name', axis=1, inplace=True)
 
 
 # df2 preprocessing
@@ -74,11 +81,17 @@ grouped_df = merged_df.groupby('email')['uid'].apply(list).reset_index()['uid']
 
 
 
-print('complete!!!')
+df1['match_col'] = df1.name.apply(lambda x: x[:6])
+df2['match_col'] = df2.name.apply(lambda x: x[:6])
+df3['match_col'] = df3.name.apply(lambda x: x[:6])
 
 
+final_df = pd.DataFrame()
+merged = pd.merge(df2, df3, on='match_col')
+
+final_df['id_is1'] = merged.uid_x
+final_df['id_is2'] = merged.uid_x
+final_df['id_is3'] = merged.uid_y
 
 
-# final_df
-
-# client.insert('table_results', final_df)
+client.insert('table_results', final_df)

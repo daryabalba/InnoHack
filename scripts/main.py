@@ -68,6 +68,11 @@ df3.drop('birthdate', axis=1, inplace=True)
 
 df3.year = df3.year.map(lambda x: edit_year(x))
 
+merged_df = pd.concat([df_1, df_2, df_3])
+grouped_df = merged_df.groupby('email')['uid'].apply(list).reset_index()['uid']
+
+
+
 
 print('complete!!!')
 

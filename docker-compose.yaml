@@ -14,9 +14,9 @@ services:
  
 
   solution:
-    image: solution
-    depends_on:
-      - clickhouse
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
+    depends_on:
+      - clickhouse
+    network_mode: "service:clickhouse"

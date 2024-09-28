@@ -1,5 +1,5 @@
 
-from tool_functions.py import (edit_year, edit_name, delete_nums, process_email_custom, 
+from toolkit.tool_functions import (edit_year, edit_name, delete_nums, process_email_custom, 
                                find_streets, find_city,
                                extract_regcode, phone_preprocessing, 
                                get_index, find_house_and_building, clean_adress)
@@ -8,15 +8,43 @@ import clickhouse_connect
 import numpy as np
 import pandas as pd
 import re
+import time
+import socket
 
 
+def wait_for_clickhouse(host, port, timeout=60):
+    start_time = time.time()
+    while True:
+        try:
+            with socket.create_connection((host, port), timeout=5):
+                print("ClickHouse доступен")
+                return True
+        except OSError:
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"Не удалось подключиться к ClickHouse на {host}:{port} за {timeout} секунд.")
+            time.sleep(1)
 
-client = clickhouse_connect.get_client(host='HOSTNAME.clickhouse.cloud', port=8123, username='default', password='')
+wait_for_clickhouse('localhost', 8123)
+
+client = clickhouse_connect.get_client(host='localhost', port=8123, username='default')
 
 # accessing input data
-df1 = client.query('SELECT * FROM table_dataset1')
-df2 = client.query('SELECT * FROM table_dataset2')
-df3 = client.query('SELECT * FROM table_dataset3')
+ds1 = client.query('SELECT * FROM table_dataset1')
+rows1 = ds1.result_rows
+cols1 = ds1.column_names
+df1 = pd.DataFrame(rows1, columns=cols1)
+
+ds2 = client.query('SELECT * FROM table_dataset2')
+rows2 = ds2.result_rows
+cols2 = ds2.column_names
+df2 = pd.DataFrame(rows2, columns=cols2)
+
+
+ds3 = client.query('SELECT * FROM table_dataset3')
+rows3 = ds3.result_rows
+cols3 = ds3.column_names
+df3 = pd.DataFrame(rows3, columns=cols3)
+
 
 
 # df1 preprocessing
@@ -75,11 +103,6 @@ df3.drop('birthdate', axis=1, inplace=True)
 
 df3.year = df3.year.map(lambda x: edit_year(x))
 
-merged_df = pd.concat([df_1, df_2, df_3])
-grouped_df = merged_df.groupby('email')['uid'].apply(list).reset_index()['uid']
-
-
-
 
 df1['match_col'] = df1.name.apply(lambda x: x[:6])
 df2['match_col'] = df2.name.apply(lambda x: x[:6])
@@ -93,5 +116,13 @@ final_df['id_is1'] = merged.uid_x
 final_df['id_is2'] = merged.uid_x
 final_df['id_is3'] = merged.uid_y
 
+final_df['id_is1'] = final_df['id_is1'].apply(lambda x: [x])
+final_df['id_is2'] = final_df['id_is2'].apply(lambda x: [x])
+final_df['id_is3'] = final_df['id_is3'].apply(lambda x: [x])
 
-client.insert('table_results', final_df)
+
+data_tuples = [tuple(x) for x in final_df.to_records(index=False)]
+table_name = 'table_results'
+columns = final_df.columns.tolist()
+
+client.insert(table_name, data_tuples, column_names=columns)

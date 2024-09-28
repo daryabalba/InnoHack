@@ -1,8 +1,8 @@
 FROM python:latest
 
-WORKDIR /scripts
-COPY requirements.txt, main.py
+WORKDIR /trying/hack-docker/scripts
+COPY . .
 
 RUN python -m pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install -r ./requirements.txt
 CMD ["python", "./main.py"]

@@ -2,7 +2,7 @@
 from toolkit.tool_functions import (edit_year, edit_name, delete_nums, process_email_custom, 
                                find_streets, find_city,
                                extract_regcode, phone_preprocessing, 
-                               get_index, find_house_and_building, clean_adress)
+                               get_index, find_house_and_building, clean_address)
 
 import clickhouse_connect
 import numpy as np
@@ -46,7 +46,6 @@ cols3 = ds3.column_names
 df3 = pd.DataFrame(rows3, columns=cols3)
 
 
-
 # df1 preprocessing
 #   preprocess birthdate
 df1.birthdate = df1.birthdate.map(lambda x: re.split('-', x))
@@ -63,6 +62,14 @@ df1.drop('email', axis=1, inplace=True)
 
 df1['name'] = df1.full_name.apply(lambda x: edit_name(x))
 df1.drop('full_name', axis=1, inplace=True)
+
+#   preprocess address
+clean_address(df1)
+df1.drop('address', axis=1, inplace=True)
+
+#   preprocess phone 
+df1[['reg_code', 'number']] = df1.phone.apply(phone_preprocessing).tolist()
+df1.drop('phone', axis=1, inplace=True)
 
 
 # df2 preprocessing
@@ -83,13 +90,18 @@ df2.last_name = df2.last_name.apply(lambda x: edit_name(x))
 df2['name'] = df2[['first_name', 'middle_name', 'last_name']].agg(' '.join, axis=1) 
 df2.drop(['first_name', 'middle_name', 'last_name'], axis=1, inplace=True)
 
-#   preprocess phones
-df2.phone = df2.phone.apply(lambda x: delete_nums(x))
+#   preprocess address
+clean_address(df2)
+df2.drop('address', axis=1, inplace=True)
+
+#   preprocess phone 
+df2[['reg_code', 'number']] = df2.phone.apply(phone_preprocessing).tolist()
+df2.drop('phone', axis=1, inplace=True)
 
 
 # df3 preprocessing
 #   preprocess names
-df3.name = df2.name.apply(lambda x: edit_name(x))
+df3.name = df3.name.apply(lambda x: edit_name(x))
 
 #   preprocess emails
 df3['login'], df3['domain'] = zip(*df3['email'].apply(process_email_custom))

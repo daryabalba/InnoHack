@@ -202,7 +202,7 @@ def find_house_and_building(text):
         return None
 
 
-def clean_adress(dataset):
+def clean_address(dataset):
     dataset['address'] = dataset['address'].apply(lambda x: x.replace('\n', ''))
     dataset['address_index'] = dataset['address'].apply(get_index)
     dataset['city'] = dataset['address'].apply(find_city)
